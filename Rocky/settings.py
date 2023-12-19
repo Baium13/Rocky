@@ -24,7 +24,7 @@ SECRET_KEY = 'django-insecure-i#r2&ior!u))1+nxck5x!h(ne%k@pk&5np!8ayh0ux0+)c6y$e
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-AUTH_USER_MODEL = 'rocky.User'
+AUTH_USER_MODEL = 'Rocky.User'
 ALLOWED_HOSTS = []
 
 
@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rocky.apps.RockyConfig',
+    'Rocky.apps.RockyConfig',
 ]
 
 MIDDLEWARE = [
