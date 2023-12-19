@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django_countries.fields import CountryField
 from django.conf import settings
 
+"""Check please """
+
 
 class ShippingAddress(models.Model):
     country = CountryField()
