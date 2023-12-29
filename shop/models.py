@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django_countries.fields import CountryField
 from django.conf import settings
 
-from Rocky.enum import Currency, OrderStatus
+from .enum import Currency, OrderStatus
 
 
 class AbstractAuditableModel(models.Model):
@@ -15,9 +15,7 @@ class AbstractAuditableModel(models.Model):
 
 
 class AbstractShippingAddress(AbstractAuditableModel):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    country = CountryField()
+    country = models.ForeignKey("shop.Country", on_delete=models.SET_NULL, null=True)
     town = models.CharField(max_length=255)
     line1 = models.CharField(max_length=255, help_text='street address and building number')
     line2 = models.CharField(max_length=255, help_text='apt number')
@@ -36,7 +34,10 @@ class User(AbstractUser):
 
 
 class OrderShippingAddress(AbstractShippingAddress):
-    pass
+    category_address = models.CharField(max_length=255, null=True, help_text='category name')
+
+    def __str__(self):
+        return self.category_address
 
 
 class Order(AbstractAuditableModel):
@@ -45,8 +46,11 @@ class Order(AbstractAuditableModel):
     status = models.CharField(max_length=50, choices=OrderStatus.choices())
     total = models.DecimalField("Order total", max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, choices=Currency.choices())
-    shipping_address = models.ForeignKey(OrderShippingAddress, null=True, on_delete=models.SET_NULL)
+    shipping_address = models.OneToOneField(OrderShippingAddress, null=True, on_delete=models.SET_NULL)
     shipping_date = models.DateField()
+
+    def __str__(self):
+        return self.number
 
 
 class OrderLine(models.Model):
@@ -58,6 +62,9 @@ class OrderLine(models.Model):
     upc = models.CharField(max_length=50)
     description = models.CharField(max_length=255, null=True)
 
+    def __str__(self):
+        return self.description
+
 
 class ProductImage(AbstractAuditableModel):
     image = models.ImageField()
@@ -65,22 +72,40 @@ class ProductImage(AbstractAuditableModel):
 
 
 class Product(models.Model):
-    name = models.CharField(max_length=255, null=False)
+    name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, null=True)
     size = models.CharField(max_length=255)
     weight = models.DecimalField(max_digits=7, decimal_places=2)
     images = models.ManyToManyField(ProductImage, related_name="products")
     default_image = models.ImageField(null=True)
 
+    def __str__(self):
+        return self.name
+
 
 class ProductPrice(models.Model):
-    price = models.DecimalField(max_digits=7, decimal_places=2, null=False)
+    price = models.DecimalField(max_digits=7, decimal_places=2)
     currency = models.CharField(max_length=3, choices=Currency.choices())
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    country = CountryField()
+    country = models.ForeignKey("shop.Country", on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"({self.price}{self.currency})"
 
 
 class Category(models.Model):
-    name = models.ManyToManyField(Product)
+    name = models.CharField(max_length=255)
+    product = models.ManyToManyField(Product)
     description = models.CharField(max_length=255)
     default_image = models.ImageField(null=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.description})"
+
+
+class Country(models.Model):
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=2)
+
+    def __str__(self):
+        return self.code
