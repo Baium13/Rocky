@@ -34,10 +34,10 @@ class User(AbstractUser):
 
 
 class OrderShippingAddress(AbstractShippingAddress):
-    category_address = models.CharField(max_length=255, null=True, help_text='category name')
+    order = models.OneToOneField('shop.Order', null=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.category_address
+        return f"{self.country.code} / {self.postal_code}"
 
 
 class Order(AbstractAuditableModel):
@@ -46,7 +46,6 @@ class Order(AbstractAuditableModel):
     status = models.CharField(max_length=50, choices=OrderStatus.choices())
     total = models.DecimalField("Order total", max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, choices=Currency.choices())
-    shipping_address = models.OneToOneField(OrderShippingAddress, null=True, on_delete=models.SET_NULL)
     shipping_date = models.DateField()
 
     def __str__(self):
@@ -54,7 +53,7 @@ class Order(AbstractAuditableModel):
 
 
 class OrderLine(models.Model):
-    order = models.OneToOneField(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=255, null=False)
     quantity = models.PositiveIntegerField()
     line_price = models.DecimalField(max_digits=10, decimal_places=2, null=False)

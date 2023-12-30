@@ -2,17 +2,9 @@ from django.contrib import admin
 from .models import *
 
 
-class ShippingAddressAdmin(admin.TabularInline):
-    model = ShippingAddress
-
-
-class OrderAdmin(admin.TabularInline):
-    model = Order
-
-
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    inlines = [ShippingAddressAdmin, OrderAdmin]
+    pass
 
 
 class ProductPriceAdmin(admin.TabularInline):
@@ -24,23 +16,29 @@ class ProductAdmin(admin.ModelAdmin):
     inlines = [ProductPriceAdmin]
 
 
-class OrderLineAdmin(admin.ModelAdmin):
+@admin.register(ProductImage)
+class ProductImageAdmin(admin.ModelAdmin):
     pass
 
 
-class CountryAdmin(admin.ModelAdmin):
-    pass
-
-
+@admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     pass
 
 
-class OrderShippingAddressAdmin(admin.ModelAdmin):
+class OrderShippingAddressAdmin(admin.TabularInline):
+    model = OrderShippingAddress
+
+
+class OrderLineAdmin(admin.TabularInline):
+    model = OrderLine
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    inlines = [OrderLineAdmin, OrderShippingAddressAdmin]
+
+
+@admin.register(Country)
+class CountryAdmin(admin.ModelAdmin):
     pass
-
-
-admin.site.register(OrderShippingAddress, OrderShippingAddressAdmin)
-admin.site.register(Category, CategoryAdmin)
-admin.site.register(OrderLine, OrderLineAdmin)
-admin.site.register(Country, CountryAdmin)

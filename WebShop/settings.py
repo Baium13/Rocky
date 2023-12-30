@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-va)6!(@pg1=^2i5nja!$dy3=4m3$#4vq2wmhmsnzt1dp9b-!s%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 AUTH_USER_MODEL = 'shop.User'
-
+MEDIA_ROOT = f"{BASE_DIR}/media"
+STATIC_ROOT = f"{BASE_DIR}/static"
 ALLOWED_HOSTS = []
 
 
