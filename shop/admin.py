@@ -14,6 +14,7 @@ class ProductPriceAdmin(admin.TabularInline):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ProductPriceAdmin]
+    list_display = ['name']
 
 
 @admin.register(ProductImage)
