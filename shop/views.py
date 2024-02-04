@@ -1,8 +1,99 @@
 from django.contrib import messages
+from django.urls import reverse
+
 from .models import *
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.generic import TemplateView
 
+from .order_service import OrderService
+from .product_service import ProductService
+
+
+class BaseView(TemplateView):
+    def dispatch(self, *args, **kwargs):
+        if self.request.GET.get('currency'):
+            self.request.session["currency"] = self.request.GET.get('currency')
+        elif not self.request.session.get('currency'):
+            self.request.session['currency'] = Currency.USD.value
+        return super().dispatch(*args, **kwargs)
+
+    def get_or_create_order(self) -> Order:
+        if self.request.user.is_authenticated:
+            order = OrderService.get_pending_order_by_user(self.request.user)
+            if not order:
+                order = OrderService.create_pending_order(
+                    currency=self.request.session.get("currency"),
+                    user=self.request.user
+                )
+        elif self.request.session.get("order_id"):
+            order = OrderService.get_pending_order_by_id(self.request.session.get("order_id"))
+        else:
+            order = OrderService.create_pending_order(
+                currency=self.request.session.get("currency"),
+            )
+            self.request.session["order_id"] = order.pk
+        return order
+
+
+class ProductListView(BaseView):
+    template_name = 'shop/store.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        order = None
+        if self.request.user.is_authenticated:
+            order = OrderService.get_pending_order_by_user(self.request.user)
+        elif self.request.session.get("order_id"):
+            order = OrderService.get_pending_order_by_id(self.request.session.get("order_id"))
+        all_products = ProductService.get_all_products()
+        context.update(
+            {'all_products': all_products, 'total_item': order.total_items if order else 0}
+        )
+        return context
+
+
+class BaseCartView(BaseView):
+    template_name = 'shop/store.html'
+    http_method_names = [
+        "get",
+        "post"
+    ]
+
+    def get_response(self):
+        raise NotImplementedError()
+
+    def post(self, request, *args, **kwargs):
+        """
+        This is add to cart functionality
+        """
+        order = self.get_or_create_order()
+        product = ProductService.get_product(request.POST.get('product_id'))
+
+        if request.POST.get('action') == "add":
+            order.add_product(product, request.POST.get('currency'))
+        elif request.POST.get('action') == "remove":
+            order.remove_product(product, request.POST.get('currency'))
+        return self.get_response()
+
+
+class AddToCartView(BaseCartView):
+    def get_response(self):
+        redirect(reverse("shop:store") + f"?currency={self.request.POST.get('currency')}")
+
+
+class CartView(BaseCartView):
+    template_name = 'shop/cart.html'
+
+    def get_response(self):
+        redirect(reverse("shop:cart") + f"?currency={self.request.POST.get('currency')}")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        context.update({
+            "order": self.get_or_create_order()
+        })
+        return context
 
 @login_required
 def add_to_cart(request, id_product):
@@ -73,18 +164,6 @@ def checkout(request):
         total_item = 0
     context = {'order': order, 'items': items, 'total_item': total_item, 'shipping_addresses': shipping_addresses}
     return render(request, 'shop/checkout.html', context)
-
-
-def product_list(request):
-    items = ProductPrice.objects.all()
-    if request.user.is_authenticated:
-        cart_items = OrderLine.objects.filter(order__user=request.user, order__status='pending')
-        total_item = sum(item.quantity for item in cart_items)
-        items = ProductPrice.objects.all()
-    else:
-        total_item = 0
-    context = {'items': items, 'total_item': total_item}
-    return render(request, "shop/store.html", context)
 
 
 def place_order(request):

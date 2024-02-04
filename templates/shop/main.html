@@ -22,10 +22,14 @@
 
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-                <a class="nav-link" href="{% url 'shop:store' %}">Store <span class="sr-only">(current)</span></a>
-            </li>
-
+            <form class="d-flex" role="currency" method="get">
+                <select name="currency" class="form-select form-select-sm" aria-label=".form-select-sm example"
+                        onchange="this.form.submit()">
+                    {% for curr in all_currencies %}
+                        <option value="{{ curr.value }}" {% if curr.value == current_currency %} selected  {% endif %} >{{ curr.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
         </ul>
         <div class="form-inline my-2 my-lg-0">
             <a href="#" class="btn btn-warning">Login</a>

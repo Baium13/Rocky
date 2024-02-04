@@ -1,3 +1,5 @@
+from functools import cached_property, lru_cache
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Sum
@@ -47,7 +49,8 @@ class OrderShippingAddress(AbstractShippingAddress):
 
 
 class Order(AbstractAuditableModel):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+    email = models.EmailField(null=True, blank=True)
     number = models.CharField(max_length=50, help_text='order number')
     status = models.CharField(max_length=50, choices=OrderStatus.choices())
     total = models.DecimalField("Order total", max_digits=10, decimal_places=2, null=True)
@@ -57,9 +60,51 @@ class Order(AbstractAuditableModel):
     def __str__(self):
         return f"{self.user}: {self.number}"
 
-    def recalculate_total(self):
+    def recalculate_total(self, currency):
+        if currency != self.currency:
+            self.currency = currency
+            for line in self.orderline_set.all():
+                line.item_price = ProductPrice.objects.filter(product__upc=line.upc,
+                                                              currency=currency).first().price
+                line.line_price = line.item_price * line.quantity
+                line.save()
         self.total = self.orderline_set.all().aggregate(Sum('line_price'))['line_price__sum']
         self.save()
+
+    @cached_property
+    def total_items(self):
+        return self.orderline_set.all().aggregate(Sum('quantity'))['quantity__sum']
+
+    def add_product(self, product, currency):
+        existing_line = OrderLine.objects.filter(upc=product.upc, order=self).first()
+        if existing_line:
+            existing_line.quantity += 1
+            existing_line.save()
+        else:
+            product_price = ProductPrice.objects.filter(product__upc=product.upc,
+                                                        currency=currency).first()
+            OrderLine.objects.create(
+                product_name=product.name,
+                upc=product.upc,
+                sku=product.sku,
+                item_price=product_price.price,
+                default_image=product.default_image,
+                line_price=product_price.price,
+                order=self,
+                description=product.description,
+                quantity=1
+            )
+        self.recalculate_total(currency)
+
+    def remove_product(self, product, currency):
+        existing_line = OrderLine.objects.filter(upc=product.upc, order=self).first()
+        if existing_line:
+            existing_line.quantity -= 1
+            if existing_line.quantity == 0:
+                existing_line.delete()
+            else:
+                existing_line.save()
+        self.recalculate_total(currency)
 
 
 class ProductImage(AbstractAuditableModel):
@@ -79,6 +124,10 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    @lru_cache
+    def get_price_by_currency(self, currency: str) -> 'ProductPrice':
+        return ProductPrice.objects.get(product=self, currency=currency)
 
 
 class OrderLine(models.Model):

@@ -11,8 +11,8 @@
 
                 <table class="table">
                         <tr>
-                            <th><h5>Items: <strong>{{ total_item }}</strong></h5></th>
-                            <th><h5>Total: <strong>{{ order_item.total|floatformat:2}} {{ order_item.currency }}</strong></h5></th>
+                            <th><h5>Items: <strong>{{ order.total_items }}</strong></h5></th>
+                            <th><h5>Total: <strong>{{ order.total|floatformat:2}} {{ order.currency }}</strong></h5></th>
                             <th>
                                 <a style="float:right; margin:5px" class="btn btn-success" href="{% url 'shop:checkout' %}">Checkout</a>
                             </th>
@@ -30,7 +30,7 @@
                     <div style="flex: 1"><strong>Quantity</strong></div>
                     <div style="flex: 1"><strong>Total</strong></div>
                 </div>
-                {% for item in cart_items %}
+                {% for item in order.orderline_set.all %}
                     <div class="cart-row">
                         <div style="flex: 2"><img class="row-image" src="{{ item.default_image.url }}"></div>
                         <div style="flex: 2">{{item.product_name }}</div>
@@ -38,9 +38,7 @@
                         <div style="flex: 1">
                             <p class="quantity">x{{item.quantity }}</p>
                             <div class="quantity">
-                                <a href="{% url 'shop:add_to_cart' item.upc%}"><img class="chg-quantity"  src="{% static 'images/arrow-up.png' %}"></a>
-
-                                <a href="{% url 'shop:remove_from_cart' item.id %}"><img class="chg-quantity" src="{% static 'images/arrow-down.png' %}"></a>
+                                TODO: Put form input here
                             </div>
                         </div>
                         <div style="flex: 1">{{ item.line_price }}{{ item.order.currency }}</div>

@@ -1,17 +1,30 @@
 {% extends 'shop/main.html' %}
 {% load static %}
+{% load product_currency %}
 {% block content %}
     <div class="row">
-        {% for item in items %}
+        {% for product in all_products %}
             <div class="col-lg-4">
-                <img class="thumbnail" src="{{ item.product.default_image.url }}">
+                <img class="thumbnail" src="{{ product.default_image.url }}">
                 <div class="box-element product">
-                    <h6><strong>{{ item.product.name }}</strong></h6>
+                    <h6><strong>{{ product.name }}</strong></h6>
                     <hr>
-                    <a class="btn btn-outline-success" href="{% url 'shop:add_to_cart' item.product.id%}">Add to cart</a>
+                    {% product_price_available product as is_product_available %}
+                    {% if is_product_available %}
+                        <form method="post" action="{% url 'shop:add-to-cart' %}">
+                            {% csrf_token %}
+                            <input type="hidden" value="{{ product.id }}" name="product_id">
+                            <input type="hidden" value="{{ current_currency }}" name="currency">
+                            <input type="hidden" value="add" name="action">
+                            <button class="btn btn-outline-success" type="submit">Add to cart</button>
+                        </form>
+                    {% endif %}
                     <a class="btn btn-outline-success" href="#">View</a>
-                    <h4 style="display: inline-block;float: right"><strong>
-                        {{ item.price }} {{ item.currency }}</strong></h4>
+                    <h4 style="display: inline-block;float: right">
+                        <strong>
+                            {% product_price product %}
+                        </strong>
+                    </h4>
                 </div>
             </div>
         {% endfor %}
