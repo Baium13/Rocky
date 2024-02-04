@@ -2,8 +2,13 @@ from django.contrib import admin
 from .models import *
 
 
+class ShippingAddressAdmin(admin.TabularInline):
+    model = ShippingAddress
+
+
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
+    inlines = [ShippingAddressAdmin]
     pass
 
 

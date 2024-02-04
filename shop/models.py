@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Sum
-from django_countries.fields import CountryField
 from django.conf import settings
 
 from .enum import Currency, OrderStatus
@@ -29,6 +28,9 @@ class AbstractShippingAddress(AbstractAuditableModel):
 class ShippingAddress(AbstractShippingAddress):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f"{self.line1},{self.line2}, {self.postal_code}, {self.country}"
+
 
 class User(AbstractUser):
     birth_date = models.DateField(null=True, blank=True)
@@ -48,25 +50,16 @@ class Order(AbstractAuditableModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     number = models.CharField(max_length=50, help_text='order number')
     status = models.CharField(max_length=50, choices=OrderStatus.choices())
-    total = models.DecimalField("Order total", max_digits=10, decimal_places=2, null=False)
+    total = models.DecimalField("Order total", max_digits=10, decimal_places=2, null=True)
     currency = models.CharField(max_length=3, choices=Currency.choices())
-    shipping_date = models.DateField()
+    shipping_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return self.number
+        return f"{self.user}: {self.number}"
 
-    def save(self, *args, **kwargs):
-        all_price = OrderLine.objects.filter(order=self)
-        self.total = 0
-        for price in all_price:
-            self.total += price.line_price
-        super(Order, self).save(*args, **kwargs)
-
-    @property
-    def get_all_item(self):
-        all_item = self.orderline_set.all()
-        item_total = sum([item.quantity for item in all_item])
-        return item_total
+    def recalculate_total(self):
+        self.total = self.orderline_set.all().aggregate(Sum('line_price'))['line_price__sum']
+        self.save()
 
 
 class ProductImage(AbstractAuditableModel):
@@ -81,6 +74,8 @@ class Product(models.Model):
     weight = models.DecimalField(max_digits=7, decimal_places=2)
     images = models.ManyToManyField(ProductImage, related_name="products")
     default_image = models.ImageField(null=True)
+    upc = models.CharField(max_length=50)
+    sku = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name
@@ -88,32 +83,18 @@ class Product(models.Model):
 
 class OrderLine(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    product_name = models.CharField(max_length=255, null=False)
     quantity = models.PositiveIntegerField(default=0, null=True, blank=True)
     line_price = models.DecimalField(max_digits=10, decimal_places=2, null=False)
+    item_price = models.DecimalField(max_digits=10, decimal_places=2, null=False)
     sku = models.CharField(max_length=50)
     upc = models.CharField(max_length=50)
     description = models.CharField(max_length=255, null=True)
-
-    @property
-    def get_price(self):
-        product = ProductPrice.objects.filter(product=self.product)
-        price = product[0].price
-        return price
-
-    @property
-    def get_currency(self):
-        product = ProductPrice.objects.filter(product=self.product)
-        currency = product[0].currency
-        return currency
+    default_image = models.ImageField(null=True)
 
     def save(self, *args, **kwargs):
-        product = ProductPrice.objects.filter(product=self.product)
-        self.line_price = product[0].price * self.quantity
-        super(OrderLine, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return self.order
+        self.line_price = self.item_price * self.quantity
+        super().save(*args, **kwargs)
 
 
 class ProductPrice(models.Model):
