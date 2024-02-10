@@ -1,0 +1,29 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+    <h2>Login</h2>
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <form method="post" class="form">
+        {% csrf_token %}
+        {{ form.username.label_tag }} {{ form.username }}
+        {{ form.password.label_tag }} {{ form.password }}
+        <p>{{ form.remember_me }} Remember Me
+            <button type="submit">Login</button>
+    </form>
+    <p><a href="{% url 'shop:register' %}" class="btn btn-warning">Registration</a>
+        <style>
+                    .messages  {
+                        color: black; /* Dark green */
+                        background-color: red; /* Light green background */
+                        border: 1px solid #c3e6cb; /* Border color */
+                        padding: 10px; /* Adjust padding as needed */
+                        margin-bottom: 10px; /* Adjust margin as needed */
+                    }
+                </style>
+{% endblock %}

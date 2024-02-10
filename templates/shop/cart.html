@@ -1,0 +1,70 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="box-element">
+                <a class="btn btn-outline-dark" href="{% url 'shop:store' %}">&#x2190; Back to Shop</a>
+
+                <br>
+                <br>
+
+                <table class="table">
+                    <tr>
+                        <th><h5>Items: <strong>{{ order.total_items }}</strong></h5></th>
+                        <th><h5>Total: <strong>{{ order.total|floatformat:2 }} {{ order.currency }}</strong></h5></th>
+                        <th>
+                            <a style="float:right; margin:5px" class="btn btn-success" href="{% url 'shop:checkout' %}">Checkout</a>
+                        </th>
+                    </tr>
+                </table>
+            </div>
+
+            <br>
+
+            <div class="box-element">
+                <div class="cart-row">
+                    <div style="flex: 2"></div>
+                    <div style="flex: 2"><strong>Item</strong></div>
+                    <div style="flex: 1"><strong>Price</strong></div>
+                    <div style="flex: 1"><strong>Quantity</strong></div>
+                    <div style="flex: 1"><strong>Total</strong></div>
+                </div>
+                {% for item in order.orderline_set.all %}
+                    <div class="cart-row">
+                        <div style="flex: 2"><img class="row-image" src="{{ item.default_image.url }}"></div>
+                        <div style="flex: 2">{{ item.product_name }}</div>
+                        <div style="flex: 1">{{ item.item_price }} {{ item.order.currency }}</div>
+                        <div style="flex: 1">
+                            <p class="quantity">x{{ item.quantity }}</p>
+                            <div class="quantity">
+                                <form method="post" action="{% url 'shop:add-to-cart' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" value="{{ item.upc }}" name="product_id">
+                                    <input type="hidden" value="{{ current_currency }}" name="currency">
+                                    <input type="hidden" value="add" name="action">
+                                    <input type="hidden" value="{% url 'shop:cart' %}" name="redirect_to">
+                                    <button class="btn btn" type="submit">
+                                        <img class="chg-quantity" src="{% static 'images/arrow-up.png' %}">
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'shop:add-to-cart' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" value="{{ item.upc }}" name="product_id">
+                                    <input type="hidden" value="{{ current_currency }}" name="currency">
+                                    <input type="hidden" value="remove" name="action">
+                                    <input type="hidden" value="{% url 'shop:cart' %}" name="redirect_to">
+                                    <button class="btn btn" type="submit">
+                                        <img class="chg-quantity" src="{% static 'images/arrow-down.png' %}">
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div style="flex: 1">{{ item.line_price }}{{ item.order.currency }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}

@@ -1,0 +1,163 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="box-element" id="form-wrapper">
+                <form id="form" method="POST" action="">
+                    {% csrf_token %}
+                    {% if request.user.is_authenticated %}
+                        <div id="user-info">
+                            <p>User Information:</p>
+                            <hr>
+                            <div class="form-field">
+                                <label for="first_name_input"><strong>Name</strong></label>
+                                <input value="{{ user.first_name }}" required class="form-control" type="text"
+                                       id="first_name_input" name="first_name" autocomplete="off">
+                            </div>
+                            <div class="form-field">
+                                <label for="email_input"><strong>Email</strong></label>
+                                <input value="{{ user.email }}" required class="form-control" type="text"
+                                       id="email_input" name="email" autocomplete="off">
+                            </div>
+                        </div>
+                        <hr>
+                        <p>Shipping Information:</p>
+                        <hr>
+                        <div class="list-group">
+                            {% for address in user.shippingaddress_set.all %}
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="radio" value="{{ address.id }}"
+                                           name="address_id" onchange="onCheckboxChange()">
+                                    {{ address.country.name }}, {{ address.town }}, {{ address.line1 }}, 
+                                    {{ address.line2 }}, {{ address.postal_code }}
+                                </label>
+                            {% endfor %}
+                            <label class="list-group-item">
+                                <input class="form-check-input me-1" type="radio" value="" name="address_id"
+                                       onchange="onCheckboxChange()">
+                                Other Address
+                            </label>
+                        </div>
+                        <div id="shipping-info" style="display: none">
+
+                            <div class="form-field">
+                                <label for="country"><strong>Country</strong></label>
+                                <input class="form-control" type="text" id="country" name="country"
+                                       autocomplete="off">
+                            </div>
+                            <div class="form-field">
+                                <label for="town"><strong>Town or State</strong></label>
+                                <input class="form-control" type="text" id="town" name="town"
+                                       autocomplete="off">
+                            </div>
+                            <div class="form-field">
+                                <label for="line1"><strong>Street and Number</strong></label>
+                                <input class="form-control" type="text" id="line1" name="line1"
+                                       autocomplete="off">
+                            </div>
+                            <div class="form-field">
+                                <label for="line2"><strong>APT Number</strong></label>
+                                <input class="form-control" type="text" id="line2" name="line2"
+                                       autocomplete="off">
+                            </div>
+                            <div class="form-field">
+                                <label for="postal_code"><strong>Postal Code</strong></label>
+                                <input class="form-control" type="text" id="postal_code" name="postal_code"
+                                       autocomplete="off">
+                            </div>
+                        </div>
+                    {% else %}
+                        <div id="user-info">
+                            <p>User Information:</p>
+                            <hr>
+                            <div class="form-field">
+                                <a><strong>Name</strong></a>
+                                <label>
+                                    <input required class="form-control" type="text" name="first_name">
+                                </label>
+                            </div>
+                            <div class="form-field">
+                                <a><strong>Email</strong></a>
+                                <label>
+                                    <input required class="form-control" type="email" name="email">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="shipping-info">
+                            <hr>
+                            <p>Shipping Information:</p>
+                            <hr>
+                            <div class="form-field">
+                                <a><strong>Country</strong></a>
+                                <label>
+                                    <input class="form-control" type="text" name="country">
+                                </label>
+                            </div>
+                            <div class="form-field">
+                                <a><strong>Town or State</strong></a>
+                                <label>
+                                    <input class="form-control" type="text" name="town">
+                                </label>
+                            </div>
+                            <div class="form-field">
+                                <a><strong>Street and Number</strong></a>
+                                <label>
+                                    <input class="form-control" type="text" name="line1">
+                                </label>
+                            </div>
+                            <div class="form-field">
+                                <a><strong>APT Number</strong></a>
+                                <label>
+                                    <input class="form-control" type="text" name="line2">
+                                </label>
+                            </div>
+                            <div class="form-field">
+                                <a><strong>Postal Code</strong></a>
+                                <label>
+                                    <input class="form-control" type="text" name="postal_code">
+                                </label>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <hr>
+                    <input id="form" class="btn btn-success btn-block" type="submit" value="Place Order">
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="box-element" id="from-info">
+                <a class="btn btn-outline-dark" href="{% url 'shop:cart' %}">&#x2190; Back to Cart</a>
+                <hr>
+                <h3>Order Summary</h3>
+                <hr>
+                {% for item in order.orderline_set.all %}
+                    <div class="cart-row">
+                        <div style="flex:2"><img class="row-image" src="{{ item.default_image.url }}"></div>
+                        <div style="flex:2"><p>{{ item.product_name }}</p></div>
+                        <div style="flex:2"><p>{{ item.item_price }} {{ item.order.currency }}</p></div>
+                        <div style="flex:1"><p>x{{ item.quantity }}</p></div>
+                    </div>
+                {% endfor %}
+                <h5><strong> Items: {{ total_item }}</strong></h5>
+                <h5><strong>Total: {{ order.total }} {{ order.currency }}</strong></h5>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        function onCheckboxChange() {
+            let el = document.getElementById("shipping-info");
+            let option1RadioButton = document.querySelector('input[name="address_id"][value=""]');
+            if (option1RadioButton.checked) {
+                el.style.display = 'block'; // Hide the element
+            } else {
+                el.style.display = 'none'; // Show the element
+            }
+        }
+
+        onCheckboxChange();
+
+    </script>
+{% endblock content %}

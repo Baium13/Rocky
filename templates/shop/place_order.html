@@ -1,0 +1,43 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="box-element" id="from-info">
+                <a class="btn btn-outline-dark" href="{% url 'shop:store' %}">&#x2190; Back to Store</a>
+                <hr>
+                {% if messages %}
+                    <ul class="messages">
+                        {% for message in messages %}
+                            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <hr>
+                {% for item in order_line %}
+                    <div class="cart-row">
+                        <div style="flex:2"><img class="row-image" src="{{ item.default_image.url }}"></div>
+                        <div style="flex:2"><p>{{ item.product_name }}</p></div>
+                        <div style="flex:2"><p>{{ item.item_price }} {{ item.order.currency }}</p></div>
+                        <div style="flex:1"><p>x{{ item.quantity }}</p></div>
+                    </div>
+                {% endfor %}
+                <h5><strong> Items: {{ total_items }}</strong></h5>
+                <h5><strong>Total: {{ order.total }} {{ order.currency }}</strong></h5>
+                <h5>
+                    <strong>Address:</strong> {{ shipping_addresses.country.name }}, {{ shipping_addresses.town }},
+                    {{ shipping_addresses.line1 }}, {{ shipping_addresses.line2 }}, {{ shipping_addresses.postal_code }}
+                </h5>
+                <style>
+                    .messages .success {
+                        color: #155724; /* Dark green */
+                        background-color: #d4edda; /* Light green background */
+                        border: 1px solid #c3e6cb; /* Border color */
+                        padding: 10px; /* Adjust padding as needed */
+                        margin-bottom: 10px; /* Adjust margin as needed */
+                    }
+                </style>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

@@ -18,13 +18,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.urls import path
+from django.urls import path, include
 
-from shop.views import ProductListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("products/", ProductListView.as_view()),
+    path('', include('shop.urls'))
 ]
 # Serving the media files in development mode
 if settings.DEBUG:
