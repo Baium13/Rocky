@@ -1,7 +1,5 @@
 import uuid
-
-from shop.enum import OrderStatus
-from shop.models import Order
+from shop.models import *
 from django.contrib.auth.models import User
 
 
@@ -14,6 +12,16 @@ class OrderService:
     @classmethod
     def get_pending_order_by_id(cls, order_id: int) -> Order:
         return cls.get_order_by_id(order_id, status=OrderStatus.PENDING.value)
+
+    @classmethod
+    def get_completed_order_by_id(cls, order_id: int) -> Order:
+        return cls.get_order_by_id(order_id, status=OrderStatus.COMPLETED.value)
+
+    @staticmethod
+    def get_completed_order_by_user(user: User) -> Order:
+        if user.is_anonymous:
+            raise ValueError("You must use non-anonymous user.")
+        return Order.objects.filter(status=OrderStatus.COMPLETED.value, user=user).order_by('-created_at').first()
 
     @staticmethod
     def get_pending_order_by_user(user: User) -> Order:
@@ -31,3 +39,7 @@ class OrderService:
             currency=currency,
             total=0
         )
+
+    @staticmethod
+    def get_address(pk: int) -> ShippingAddress:
+        return ShippingAddress.objects.get(pk=pk)

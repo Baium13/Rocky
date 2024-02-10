@@ -106,6 +106,19 @@ class Order(AbstractAuditableModel):
                 existing_line.save()
         self.recalculate_total(currency)
 
+    def add_address(self, address: ShippingAddress = None, **kwargs):
+        if address:
+            OrderShippingAddress.objects.create(
+                country=address.country,
+                town=address.town,
+                line1=address.line1,
+                line2=address.line2,
+                postal_code=address.postal_code,
+                order=self,
+            )
+        else:
+            OrderShippingAddress.objects.create(order=self, **kwargs)
+
 
 class ProductImage(AbstractAuditableModel):
     image = models.ImageField()

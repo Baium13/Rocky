@@ -1,0 +1,9 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+Logged out
+Thanks for spending some quality time with the web site today.
+
+    <p><a href="{% url 'shop:login_form' %}" class="btn btn-warning">Log in again</a>
+    <p><a href="{% url 'shop:store' %}" class="btn btn-warning">Go to shop</a>
+{% endblock %}

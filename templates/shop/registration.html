@@ -1,0 +1,31 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+ {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+<h2>Registration</h2>
+  <form method="post" class="form">
+    {% csrf_token %}
+    <p>{{ form.username.label_tag }} {{ form.username }}
+    <p>{{ form.email.label_tag }} {{ form.email }}
+      <p>{{ form.password1.label_tag }} {{ form.password1 }}
+      <p>Password must be at least 8 characters; Password must contain at least one letter; Password must contain at least one uppercase letter!
+    <p>{{ form.password2.label_tag }} {{ form.password2 }} 
+      <p>Password must be at least 8 characters; Password must contain at least one letter; Password must contain at least one uppercase letter!
+    <p><button type="submit">Register</button>
+  </form>
+    <style>
+                    .messages  {
+                        color: black; /* Dark green */
+                        background-color: red; /* Light green background */
+                        border: 1px solid #c3e6cb; /* Border color */
+                        padding: 10px; /* Adjust padding as needed */
+                        margin-bottom: 10px; /* Adjust margin as needed */
+                    }
+                </style>
+{% endblock %}

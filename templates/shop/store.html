@@ -16,6 +16,7 @@
                             <input type="hidden" value="{{ product.id }}" name="product_id">
                             <input type="hidden" value="{{ current_currency }}" name="currency">
                             <input type="hidden" value="add" name="action">
+                            <input type="hidden" value="{% url 'shop:store' %}" name="redirect_to">
                             <button class="btn btn-outline-success" type="submit">Add to cart</button>
                         </form>
                     {% endif %}

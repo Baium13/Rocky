@@ -48,3 +48,6 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(Country)
 class CountryAdmin(admin.ModelAdmin):
     pass
+
+
+

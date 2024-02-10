@@ -1,13 +1,17 @@
-from django.contrib import messages
-from django.urls import reverse
+import pycountry
+from django.views import View
 
+from .forms import CustomAuthenticationForm, CustomUserCreationForm
+from django.contrib import messages
+from django.urls import reverse, reverse_lazy
+from django.contrib.auth import login
 from .models import *
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
 from django.views.generic import TemplateView
 
 from .order_service import OrderService
 from .product_service import ProductService
+from django.contrib.auth.views import LoginView, LogoutView
 
 
 class BaseView(TemplateView):
@@ -48,7 +52,7 @@ class ProductListView(BaseView):
             order = OrderService.get_pending_order_by_id(self.request.session.get("order_id"))
         all_products = ProductService.get_all_products()
         context.update(
-            {'all_products': all_products, 'total_item': order.total_items if order else 0}
+            {'all_products': all_products, 'total_items': order.total_items if order else 0}
         )
         return context
 
@@ -61,157 +65,128 @@ class BaseCartView(BaseView):
     ]
 
     def get_response(self):
-        raise NotImplementedError()
+        redirect_to = self.request.POST.get("redirect_to")
+        if redirect_to:
+            return redirect(redirect_to + f"?currency={self.request.POST.get('currency')}")
+        return redirect(reverse("shop:store") + f"?currency={self.request.POST.get('currency')}")
 
     def post(self, request, *args, **kwargs):
-        """
-        This is add to cart functionality
-        """
         order = self.get_or_create_order()
         product = ProductService.get_product(request.POST.get('product_id'))
 
         if request.POST.get('action') == "add":
             order.add_product(product, request.POST.get('currency'))
+            return self.get_response()
         elif request.POST.get('action') == "remove":
             order.remove_product(product, request.POST.get('currency'))
-        return self.get_response()
+            return self.get_response()
 
 
 class AddToCartView(BaseCartView):
-    def get_response(self):
-        redirect(reverse("shop:store") + f"?currency={self.request.POST.get('currency')}")
+    pass
 
 
 class CartView(BaseCartView):
     template_name = 'shop/cart.html'
 
-    def get_response(self):
-        redirect(reverse("shop:cart") + f"?currency={self.request.POST.get('currency')}")
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data()
         context.update({
-            "order": self.get_or_create_order()
+            "order": self.get_or_create_order(),
+            'total_items': self.get_or_create_order().total_items
         })
         return context
 
-@login_required
-def add_to_cart(request, id_product):
-    order, created = Order.objects.get_or_create(user=request.user, status='pending')
-    product = get_object_or_404(Product, id=id_product)
-    image = product.default_image
-    product_price_item = get_object_or_404(ProductPrice, product_id=id_product)
-    if created is True:
-        order.user = request.user
-        order.number = 1
-        order.currency = product_price_item.currency
-        order.status = 'pending'
 
-    cart_item_product_list = OrderLine.objects.filter(order=order, upc=product.upc).first()
-    cart_item_order_line = OrderLine.objects.filter(order=order, upc=id_product).first()
-    if cart_item_product_list or cart_item_order_line:
-        cart_item_product_list.quantity += 1
-        cart_item_product_list.save()
-        return redirect("shop:cart")
-    else:
-        OrderLine.objects.create(order=order, product_name=product_price_item.product.name,
-                                 item_price=product_price_item.price, quantity=1, default_image=image, upc=product.upc,
-                                 sku=product.sku, description=product.description)
-    order.recalculate_total()
-    return redirect("shop:store")
+class OrderView(CartView):
+    template_name = 'shop/checkout.html'
+    http_method_names = [
+        "get",
+        "post"
+    ]
 
+    def get_response(self):
+        return redirect(reverse("shop:place_order") + f"?currency={self.request.POST.get('currency')}")
 
-@login_required
-def remove_from_cart(request, cart_item_id):
-    cart_item_order_line = get_object_or_404(OrderLine, id=cart_item_id)
-    order = cart_item_order_line.order
-    if cart_item_order_line:
-        cart_item_order_line.quantity -= 1
-        cart_item_order_line.save()
-        order.recalculate_total()
-        if cart_item_order_line.quantity == 0:
-            cart_item_order_line.delete()
-    return redirect("shop:cart")
-
-
-def cart(request):
-    if request.user.is_authenticated and Order.objects.filter(user=request.user, status='pending').exists():
-        order_item = get_object_or_404(Order, user=request.user, status='pending')
-        cart_items = OrderLine.objects.filter(order__user=request.user, order__status='pending')
-        total_item = sum(item.quantity for item in cart_items)
-    else:
-        order_item = []
-        cart_items = []
-        total_item = '0'
-    context = {
-        'order_item': order_item,
-        "cart_items": cart_items,
-        "total_item": total_item,
-    }
-    return render(request, "shop/cart.html", context)
-
-
-def checkout(request):
-    if request.user.is_authenticated:
-        order, created = Order.objects.get_or_create(user=request.user, status='pending')
-        shipping_addresses = ShippingAddress.objects.filter(user=request.user)
-        items = order.orderline_set.all()
-        total_item = sum(item.quantity for item in items)
-    else:
-        order = []
-        shipping_addresses = []
-        items = []
-        total_item = 0
-    context = {'order': order, 'items': items, 'total_item': total_item, 'shipping_addresses': shipping_addresses}
-    return render(request, 'shop/checkout.html', context)
-
-
-def place_order(request):
-    if request.user.is_authenticated:
-        if request.method == 'POST':
-            address_id = request.POST.get('address_id')
+    def post(self, request, *args, **kwargs):
+        order = self.get_or_create_order()
+        address_id = request.POST.get('address_id')
+        if address_id:
+            address = ShippingAddress.objects.get(id=address_id)
+            order.add_address(address)
+        else:
+            email = request.POST.get('email')
+            # first_name = request.POST.get('first_name')
             country = request.POST.get('country')
-            code = country[0:2]
+            get_code = pycountry.countries.get(name=country)
+            code = get_code.alpha_2
             town = request.POST.get('town')
             line1 = request.POST.get('line1')
             line2 = request.POST.get('line2')
             postal_code = request.POST.get('postal_code')
+            country_instance, created = Country.objects.get_or_create(name=country, code=code)
+            order.add_address(country=country_instance,
+                              town=town,
+                              line1=line1,
+                              line2=line2,
+                              postal_code=postal_code)
+            order.email = email
+        order.status = OrderStatus.COMPLETED.value
+        order.save()
 
-            if address_id:
-                address = get_object_or_404(ShippingAddress, id=address_id)
-                shipping_addresses = OrderShippingAddress.objects.create(country=address.country, town=address.town,
-                                                                         line1=address.line1,
-                                                                         line2=address.line2,
-                                                                         postal_code=address.postal_code)
-                shipping_addresses.save()
-                order = get_object_or_404(Order, user=request.user, status='pending')
-                order.status = 'completed'
-                order.save()
-                order_line = OrderLine.objects.filter(order__user=request.user, order__status='completed')
-                total_item = sum(item.quantity for item in order_line)
-                context = {'order_line': order_line, 'shipping_addresses': shipping_addresses, 'order': order,
-                           'total_item': total_item}
-                messages.success(request, 'Order Completed success.')
-                return render(request, 'shop/place_order.html', context)
+        return self.get_response()
 
-            else:
-                country_instance, created = Country.objects.get_or_create(name=country, code=code)
-                shipping_addresses = OrderShippingAddress.objects.create(country=country_instance, town=town,
-                                                                         line1=line1,
-                                                                         line2=line2,
-                                                                         postal_code=postal_code)
-                shipping_addresses.save()
-                order = get_object_or_404(Order, user=request.user, status='pending')
-                order.status = 'completed'
-                order.save()
-                order_line = OrderLine.objects.filter(order__user=request.user, order__status='completed')
-                total_item = sum(item.quantity for item in order_line)
-                context = {'order_line': order_line, 'shipping_addresses': shipping_addresses, 'order': order,
-                           'total_item': total_item}
-                messages.success(request, 'Order Completed success, and your new address has been placed.')
-                return render(request, 'shop/place_order.html', context)
 
-        order_line = []
-        shipping_addresses = []
-        context = {'order_line': order_line, 'shipping_addresses': shipping_addresses}
-        return render(request, 'shop/place_order.html', context)
+class PlaceOrderView(BaseView):
+    template_name = 'shop/place_order.html'
+
+    def get_context_data(self, **kwargs):
+        if self.request.user.is_authenticated:
+            order_completed = OrderService.get_completed_order_by_user(self.request.user)
+        elif self.request.session.get("order_id"):
+            order_completed = OrderService.get_completed_order_by_id(self.request.session.get("order_id"))
+        context = super().get_context_data()
+        context.update({
+            "order": order_completed,
+            "total_items": order_completed.total_items,
+            "shipping_addresses": OrderShippingAddress.objects.get(order_id=order_completed.id)
+        })
+        messages.success(self.request, 'Order Completed success.')
+        return context
+
+
+class CustomLoginView(LoginView):
+    template_name = 'shop/login_form.html'
+    authentication_form = CustomAuthenticationForm
+    success_url = reverse_lazy('shop:store')
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Invalid username or password. Please try again.')
+        return super().form_invalid(form)
+
+
+class CustomRegistrationView(View):
+    template_name = 'shop/registration.html'
+    form_class = CustomUserCreationForm
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('shop:store')
+        else:
+            error_message = f"An error occurred during user creation: {form.error_messages}"
+            messages.error(request, error_message)
+        return render(request, self.template_name, {'form': form})
+
+
+class CustomLogoutView(LogoutView):
+    template_name = 'shop/logout_form.html'
+
+    def get_response(self):
+        return redirect(reverse("shop:logout_form") + f"?currency={self.request.POST.get('currency')}")

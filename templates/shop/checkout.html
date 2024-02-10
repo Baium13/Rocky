@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-lg-6">
             <div class="box-element" id="form-wrapper">
-                <form id="form" method="POST" action="{% url 'shop:place_order' %}">
+                <form id="form" method="POST" action="">
                     {% csrf_token %}
                     {% if request.user.is_authenticated %}
                         <div id="user-info">
@@ -26,11 +26,12 @@
                         <p>Shipping Information:</p>
                         <hr>
                         <div class="list-group">
-                            {% for address in shipping_addresses %}
+                            {% for address in user.shippingaddress_set.all %}
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="radio" value="{{ address.id }}"
                                            name="address_id" onchange="onCheckboxChange()">
-                                    {{ address }}
+                                    {{ address.country.name }}, {{ address.town }}, {{ address.line1 }}, 
+                                    {{ address.line2 }}, {{ address.postal_code }}
                                 </label>
                             {% endfor %}
                             <label class="list-group-item">
@@ -40,30 +41,30 @@
                             </label>
                         </div>
                         <div id="shipping-info" style="display: none">
-    
-                                <div class="form-field">
-                                    <label for="country"><strong>Country</strong></label>
-                                    <input  class="form-control" type="text" id="country" name="country"
+
+                            <div class="form-field">
+                                <label for="country"><strong>Country</strong></label>
+                                <input class="form-control" type="text" id="country" name="country"
                                        autocomplete="off">
                             </div>
                             <div class="form-field">
                                 <label for="town"><strong>Town or State</strong></label>
-                                <input  class="form-control" type="text" id="town" name="town"
+                                <input class="form-control" type="text" id="town" name="town"
                                        autocomplete="off">
                             </div>
                             <div class="form-field">
                                 <label for="line1"><strong>Street and Number</strong></label>
-                                <input  class="form-control" type="text" id="line1" name="line1"
+                                <input class="form-control" type="text" id="line1" name="line1"
                                        autocomplete="off">
                             </div>
                             <div class="form-field">
                                 <label for="line2"><strong>APT Number</strong></label>
-                                <input  class="form-control" type="text" id="line2" name="line2"
+                                <input class="form-control" type="text" id="line2" name="line2"
                                        autocomplete="off">
                             </div>
                             <div class="form-field">
                                 <label for="postal_code"><strong>Postal Code</strong></label>
-                                <input  class="form-control" type="text" id="postal_code" name="postal_code"
+                                <input class="form-control" type="text" id="postal_code" name="postal_code"
                                        autocomplete="off">
                             </div>
                         </div>
@@ -132,7 +133,7 @@
                 <hr>
                 <h3>Order Summary</h3>
                 <hr>
-                {% for item in items %}
+                {% for item in order.orderline_set.all %}
                     <div class="cart-row">
                         <div style="flex:2"><img class="row-image" src="{{ item.default_image.url }}"></div>
                         <div style="flex:2"><p>{{ item.product_name }}</p></div>
