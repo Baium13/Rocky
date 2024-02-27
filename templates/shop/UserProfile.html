@@ -1,0 +1,88 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+    <h1>User Profile</h1>
+
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>FirstName:</strong> {{ user.first_name }}</p>
+    <p><strong>LastName:</strong> {{ user.last_name }}</p>
+    <p><strong>Shipping Info:</strong></p>
+
+    <div class="list-group">
+        {% for address in user.shippingaddress_set.all %}
+            <label class="list-group-item">
+                <input class="form-check-input me-1" type="radio" value="{{ address.id }}"
+                       name="address_id" onchange="onCheckboxChange()">
+                {{ address.country.name }}, {{ address.town }}, {{ address.line1 }},
+                {{ address.line2 }}, {{ address.postal_code }}
+            </label>
+        {% endfor %}
+        <h1>Order information with status "PENDING"</h1>
+        <table class="table">
+            <tr>
+                <th><h5>Items: <strong>{{ order_pending.total_items }}</strong></h5></th>
+                <th><h5>Total: <strong>{{ order_pending.total|floatformat:2 }} {{ order_pending.currency }}</strong>
+                </h5>
+                </th>
+            </tr>
+        </table>
+        <div class="box-element">
+            <div class="cart-row">
+                <div style="flex: 2"></div>
+                <div style="flex: 2"><strong>Item</strong></div>
+                <div style="flex: 1"><strong>Price</strong></div>
+                <div style="flex: 1"><strong>Quantity</strong></div>
+                <div style="flex: 1"><strong>Total</strong></div>
+            </div>
+            {% for item in order_pending.orderline_set.all %}
+                <div class="cart-row">
+                    <div style="flex: 2"><img class="row-image" src="{{ item.default_image.url }}"></div>
+                    <div style="flex: 2">{{ item.product_name }}</div>
+                    <div style="flex: 1">{{ item.item_price }} {{ item.order.currency }}</div>
+                    <div style="flex: 1">
+                        <p class="quantity">x{{ item.quantity }}</p>
+                        <div class="quantity">
+                            <input type="hidden" value="{{ item.upc }}" name="product_upc">
+                            <input type="hidden" value="{{ current_currency }}" name="currency">
+                        </div>
+                    </div>
+                    <div style="flex: 1">{{ item.line_price }}{{ item.order.currency }}</div>
+                </div>
+            {% endfor %}
+            <h1>Order information with status "COMPLETED"</h1>
+            <table class="table">
+                <tr>
+                    <th><h5>Items: <strong>{{ order_completed.total_items }}</strong></h5></th>
+                    <th><h5>Total:
+                        <strong>{{ order_completed.total|floatformat:2 }} {{ order_completed.currency }}</strong>
+                    </h5></th>
+                </tr>
+            </table>
+            <div class="box-element">
+                <div class="cart-row">
+                    <div style="flex: 2"></div>
+                    <div style="flex: 2"><strong>Item</strong></div>
+                    <div style="flex: 1"><strong>Price</strong></div>
+                    <div style="flex: 1"><strong>Quantity</strong></div>
+                    <div style="flex: 1"><strong>Total</strong></div>
+                </div>
+                {% for item in order_completed.orderline_set.all %}
+                    <div class="cart-row">
+                        <div style="flex: 2"><img class="row-image" src="{{ item.default_image.url }}"></div>
+                        <div style="flex: 2">{{ item.product_name }}</div>
+                        <div style="flex: 1">{{ item.item_price }} {{ item.order.currency }}</div>
+                        <div style="flex: 1">
+                            <p class="quantity">x{{ item.quantity }}</p>
+                            <div class="quantity">
+                                <input type="hidden" value="{{ item.upc }}" name="product_upc">
+                                <input type="hidden" value="{{ current_currency }}" name="currency">
+                            </div>
+                        </div>
+                        <div style="flex: 1">{{ item.line_price }}{{ item.order.currency }}</div>
+                    </div>
+                {% endfor %}
+
+
+                <b><a href="{% url 'shop:store' %}">go to Shop</a></b>
+{% endblock content %}

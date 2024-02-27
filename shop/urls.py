@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .views import AddToCartView, CartView, OrderView, PlaceOrderView, CustomLoginView, CustomRegistrationView, \
-    CustomLogoutView
+    CustomLogoutView, RemoveFromCartView, UserProfile
 
 app_name = 'shop'
 
@@ -14,4 +14,6 @@ urlpatterns = [
     path('login_form/', CustomLoginView.as_view(), name='login_form'),
     path('register/', CustomRegistrationView.as_view(), name='register'),
     path('logout_form/', CustomLogoutView.as_view(), name='logout_form'),
+    path("remove-from-cart/", RemoveFromCartView.as_view(), name="remove-from-cart"),
+    path("UserProfile/", UserProfile.as_view(), name="UserProfile"),
 ]

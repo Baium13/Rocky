@@ -9,5 +9,9 @@ class ProductService:
         return Product.objects.all().prefetch_related("productprice_set")
 
     @staticmethod
-    def get_product(pk: int) -> Product:
+    def get_product_by_upc(upc: int) -> Product:
+        return Product.objects.get(upc=upc)
+
+    @staticmethod
+    def get_product_by_id(pk: int) -> Product:
         return Product.objects.get(pk=pk)

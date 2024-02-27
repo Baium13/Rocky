@@ -4,7 +4,6 @@ import django.contrib.auth.models
 import django.contrib.auth.validators
 import django.db.models.deletion
 import django.utils.timezone
-import django_countries.fields
 from django.conf import settings
 from django.db import migrations, models
 
@@ -24,7 +23,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('country', django_countries.fields.CountryField(max_length=2)),
+                ('country', models.CharField(max_length=2)),
                 ('town', models.CharField(max_length=255)),
                 ('line1', models.CharField(help_text='street address and building number', max_length=255)),
                 ('line2', models.CharField(help_text='apt number', max_length=255)),
@@ -137,7 +136,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('price', models.DecimalField(decimal_places=2, max_digits=7)),
                 ('currency', models.CharField(choices=[('USD', 'USD'), ('PLN', 'PLN'), ('EUR', 'EUR')], max_length=3)),
-                ('country', django_countries.fields.CountryField(max_length=2)),
+                ('country', models.CharField(max_length=2)),
                 ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='shop.product')),
             ],
         ),
@@ -147,7 +146,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('country', django_countries.fields.CountryField(max_length=2)),
+                ('country', models.CharField(max_length=2)),
                 ('town', models.CharField(max_length=255)),
                 ('line1', models.CharField(help_text='street address and building number', max_length=255)),
                 ('line2', models.CharField(help_text='apt number', max_length=255)),
