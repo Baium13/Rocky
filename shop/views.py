@@ -72,8 +72,10 @@ class BaseCartView(BaseView):
 
     def post(self, request, *args, **kwargs):
         order = self.get_or_create_order()
-        product = ProductService.get_product(request.POST.get('product_id'))
-
+        if request.POST.get('product_id'):
+            product = ProductService.get_product_by_id(request.POST.get('product_id'))
+        else:
+            product = ProductService.get_product_by_upc(request.POST.get('product_upc'))
         if request.POST.get('action') == "add":
             order.add_product(product, request.POST.get('currency'))
             return self.get_response()
@@ -83,6 +85,10 @@ class BaseCartView(BaseView):
 
 
 class AddToCartView(BaseCartView):
+    pass
+
+
+class RemoveFromCartView(BaseCartView):
     pass
 
 
@@ -190,3 +196,18 @@ class CustomLogoutView(LogoutView):
 
     def get_response(self):
         return redirect(reverse("shop:logout_form") + f"?currency={self.request.POST.get('currency')}")
+
+
+class UserProfile(BaseView):
+    template_name = 'shop/UserProfile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        order_pending = OrderService.get_pending_order_by_user(self.request.user)
+        order_completed = OrderService.get_completed_order_by_user(self.request.user)
+        context.update(
+            {'user': user, 'order_pending': order_pending, 'order_completed': order_completed,
+             'total_items': order_pending.total_items if order_pending else 0}
+        )
+        return context

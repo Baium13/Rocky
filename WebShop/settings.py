@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-va)6!(@pg1=^2i5nja!$dy3=4m3$#4vq2wmhmsnzt1dp9b-!s%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 AUTH_USER_MODEL = 'shop.User'
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 

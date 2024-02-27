@@ -40,7 +40,7 @@
                             <div class="quantity">
                                 <form method="post" action="{% url 'shop:add-to-cart' %}">
                                     {% csrf_token %}
-                                    <input type="hidden" value="{{ item.upc }}" name="product_id">
+                                    <input type="hidden" value="{{ item.upc }}" name="product_upc">
                                     <input type="hidden" value="{{ current_currency }}" name="currency">
                                     <input type="hidden" value="add" name="action">
                                     <input type="hidden" value="{% url 'shop:cart' %}" name="redirect_to">
@@ -48,9 +48,9 @@
                                         <img class="chg-quantity" src="{% static 'images/arrow-up.png' %}">
                                     </button>
                                 </form>
-                                <form method="post" action="{% url 'shop:add-to-cart' %}">
+                                <form method="post" action="{% url 'shop:remove-from-cart' %}">
                                     {% csrf_token %}
-                                    <input type="hidden" value="{{ item.upc }}" name="product_id">
+                                    <input type="hidden" value="{{ item.upc }}" name="product_upc">
                                     <input type="hidden" value="{{ current_currency }}" name="currency">
                                     <input type="hidden" value="remove" name="action">
                                     <input type="hidden" value="{% url 'shop:cart' %}" name="redirect_to">
